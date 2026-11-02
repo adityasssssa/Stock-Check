@@ -1,4 +1,4 @@
-name: [REDACTED] Medium Shirt Stock Check
+name: "REDACTED Medium Shirt Stock Check"
 
 on:
   schedule:
@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: [REDACTED]-medium-shirt-stock-check
+  group: redacted-medium-shirt-stock-check
   cancel-in-progress: false
 
 jobs:
@@ -42,7 +42,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python test_telegram.py
 
-      - name: Check [REDACTED] Medium stock
+      - name: Check Medium stock
         if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.send_test_message) }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -59,5 +59,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add state.json
-          git commit -m "Update [REDACTED] stock state" || exit 0
+          git commit -m "Update stock state" || exit 0
           git push
