@@ -111,11 +111,7 @@ def main() -> int:
     print(f"Variant ID: {variant.get('id')}")
     print(f"Available: {available}")
 
-    previous = load_previous_state()
-    previous_available = None if previous is None else bool(previous.get("available"))
-    should_alert = previous_available is False and available is True
-
-    if should_alert:
+    if available:
         send_telegram(
             "🚨 [REDACTED] RESTOCK\n\n"
             "Grey Overdye Tonal Chevron T-Shirt\n"
@@ -123,11 +119,9 @@ def main() -> int:
             "Status: IN STOCK\n\n"
             f"{PRODUCT_URL}"
         )
-        print("Telegram restock alert sent.")
-    elif previous is None:
-        print("First run: baseline state recorded. No restock alert sent.")
+        print("Telegram in-stock alert sent.")
     else:
-        print("No restock transition. No Telegram alert sent.")
+        print("Medium is out of stock. No Telegram alert sent.")
 
     save_state(available, variant)
     return 0
