@@ -1,0 +1,63 @@
+name: "REDACTED Medium Shirt Stock Check"
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      send_test_message:
+        description: "Send a Telegram test message instead of checking stock"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: redacted-medium-shirt-stock-check
+  cancel-in-progress: false
+
+jobs:
+  check-stock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send Telegram test message
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.send_test_message }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python test_telegram.py
+
+      - name: Check Medium stock
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.send_test_message) }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python checker.py
+
+      - name: Save stock state
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.send_test_message) }}
+        run: |
+          if git diff --quiet -- state.json && git ls-files --error-unmatch state.json >/dev/null 2>&1; then
+            echo "Stock state unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          git commit -m "Update stock state" || exit 0
+          git push
