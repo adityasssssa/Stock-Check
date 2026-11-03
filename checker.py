@@ -1,7 +1,5 @@
-import json
 import os
 import sys
-from pathlib import Path
 from typing import Any
 
 import requests
@@ -9,7 +7,6 @@ import requests
 PRODUCT_URL = "https://store.palantir.com/products/grey-overdye-tonal-chevron-t-shirt"
 PRODUCT_JSON_URL = PRODUCT_URL + ".js"
 TARGET_SIZE = "M"
-STATE_FILE = Path("state.json")
 
 
 def normalize_size(value: str) -> str:
@@ -17,11 +14,14 @@ def normalize_size(value: str) -> str:
 
 
 def fetch_product() -> dict[str, Any]:
-    headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; [REDACTED]StockMonitor/1.0)",
-        "Accept": "application/json,text/javascript,*/*;q=0.8",
-    }
-    response = requests.get(PRODUCT_JSON_URL, headers=headers, timeout=20)
+    response = requests.get(
+        PRODUCT_JSON_URL,
+        headers={
+            "User-Agent": "Mozilla/5.0 (compatible; StockMonitor/1.0)",
+            "Accept": "application/json,text/javascript,*/*;q=0.8",
+        },
+        timeout=20,
+    )
     response.raise_for_status()
     return response.json()
 
@@ -30,63 +30,36 @@ def find_variant(product: dict[str, Any], target_size: str) -> dict[str, Any]:
     wanted = normalize_size(target_size)
     variants = product.get("variants") or []
 
-    matches = []
     for variant in variants:
-        candidates = [
-            str(variant.get("title", "")),
-            str(variant.get("option1", "")),
-            str(variant.get("option2", "")),
-            str(variant.get("option3", "")),
+        values = [
+            variant.get("title"),
+            variant.get("option1"),
+            variant.get("option2"),
+            variant.get("option3"),
         ]
-        if any(normalize_size(v) == wanted for v in candidates if v):
-            matches.append(variant)
+        if any(
+            value is not None and normalize_size(str(value)) == wanted
+            for value in values
+        ):
+            return variant
 
-    if not matches:
-        available_titles = [str(v.get("title", "")) for v in variants]
-        raise RuntimeError(
-            f"Could not find size {target_size!r}. "
-            f"Variants returned by store: {available_titles}"
-        )
-
-    exact = [
-        v for v in matches
-        if normalize_size(str(v.get("title", ""))) == wanted
-    ]
-    if len(exact) == 1:
-        return exact[0]
-
-    return matches[0]
-
-
-def load_previous_state() -> dict[str, Any] | None:
-    if not STATE_FILE.exists():
-        return None
-    try:
-        return json.loads(STATE_FILE.read_text())
-    except Exception:
-        return None
-
-
-def save_state(available: bool, variant: dict[str, Any]) -> None:
-    payload = {
-        "available": available,
-        "variant_id": variant.get("id"),
-        "variant_title": variant.get("title"),
-    }
-    STATE_FILE.write_text(json.dumps(payload, indent=2) + "\n")
+    titles = [str(v.get("title", "")) for v in variants]
+    raise RuntimeError(
+        f"Could not find size {target_size!r}. Variants returned: {titles}"
+    )
 
 
 def send_telegram(message: str) -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+
     if not token or not chat_id:
         raise RuntimeError(
-            "Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID GitHub secret."
+            "Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID environment variable."
         )
 
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
     response = requests.post(
-        url,
+        f"https://api.telegram.org/bot{token}/sendMessage",
         json={
             "chat_id": chat_id,
             "text": message,
@@ -95,6 +68,7 @@ def send_telegram(message: str) -> None:
         timeout=20,
     )
     response.raise_for_status()
+
     data = response.json()
     if not data.get("ok"):
         raise RuntimeError(f"Telegram API returned an error: {data}")
@@ -123,9 +97,12 @@ def main() -> int:
     else:
         print("Medium is out of stock. No Telegram alert sent.")
 
-    save_state(available, variant)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
