@@ -2,7 +2,7 @@ name: "REDACTED Medium Shirt Stock Check"
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "7-59/15 * * * *"
   workflow_dispatch:
     inputs:
       send_test_message:
