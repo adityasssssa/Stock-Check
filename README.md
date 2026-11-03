@@ -1,6 +1,6 @@
 # [REDACTED] Stock Monitor
 
-Small Python stock monitor for the **Grey Overdye Tonal Chevron T-Shirt** in **Medium (M)**.
+Small Python stock monitor for the **Lightweight Chore Coat Black** in **Medium (M)**.
 
 It is designed to run on an always-on Linux VM. If Medium is in stock, it sends a Telegram alert every time the checker runs.
 
