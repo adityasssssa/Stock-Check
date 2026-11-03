@@ -4,7 +4,7 @@ from typing import Any
 
 import requests
 
-PRODUCT_URL = "https://store.palantir.com/products/grey-overdye-tonal-chevron-t-shirt"
+PRODUCT_URL = "https://store.palantir.com/products/lightweight-chore-coat-black"
 PRODUCT_JSON_URL = PRODUCT_URL + ".js"
 TARGET_SIZE = "M"
 
@@ -88,7 +88,7 @@ def main() -> int:
     if available:
         send_telegram(
             "🚨 [REDACTED] RESTOCK\n\n"
-            "Grey Overdye Tonal Chevron T-Shirt\n"
+            "Lightweight Chore Coat Black\n"
             "Size: Medium (M)\n"
             "Status: IN STOCK\n\n"
             f"{PRODUCT_URL}"
