@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=REPLACE_WITH_VM_USERNAME
-WorkingDirectory=/home/REPLACE_WITH_VM_USERNAME/Stock-Check
+User=billybelloas
+WorkingDirectory=/home/billybelloas/Stock-Check
 EnvironmentFile=/etc/stock-check.env
-ExecStart=/home/REPLACE_WITH_VM_USERNAME/Stock-Check/.venv/bin/python /home/REPLACE_WITH_VM_USERNAME/Stock-Check/checker.py
+ExecStart=/home/billybelloas/Stock-Check/.venv/bin/python /home/billybelloas/Stock-Check/checker.py
