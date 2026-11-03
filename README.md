@@ -1,93 +1,99 @@
-# [REDACTED] Telegram Restock Bot
+# [REDACTED] Stock Monitor
 
-Monitors the **Grey Overdye Tonal Chevron T-Shirt** in **Medium (M)**.
+Small Python stock monitor for the **Grey Overdye Tonal Chevron T-Shirt** in **Medium (M)**.
 
-- Product: https://store.palantir.com/products/grey-overdye-tonal-chevron-t-shirt
-- Check frequency: every 15 minutes
-- Alerts: Telegram
-- Runs on: GitHub Actions
-- Laptop required: No
+It is designed to run on an always-on Linux VM. If Medium is in stock, it sends a Telegram alert every time the checker runs.
 
-## Telegram setup
+## What it does
 
-1. Open Telegram and message **@BotFather**.
-2. Send `/newbot`.
-3. Follow the prompts and copy the bot token.
-4. Open your new bot and send it a message such as `hello`.
-5. In a browser, open:
+- Checks the exact Medium variant
+- Sends a Telegram message when Medium is available
+- Sends no message when Medium is sold out
+- Intended to run every 5 minutes with systemd
+- Does not use GitHub Actions
 
-   `https://api.telegram.org/botYOUR_BOT_TOKEN/getUpdates`
+## Files
 
-6. Find:
+- `checker.py` — stock check and Telegram alert
+- `requirements.txt` — Python dependency
+- `stock-check.service` — systemd service
+- `stock-check.timer` — runs the service every 5 minutes
 
-   `"chat": {"id": 123456789}`
+## VM setup
 
-That number is your Telegram chat ID.
+Clone the repo:
 
-## GitHub setup
+```bash
+git clone https://github.com/adityasssssa/Stock-Check.git
+cd Stock-Check
+```
 
-Create a GitHub repository and upload all files, including:
+Install Python dependencies:
 
-`.github/workflows/stock-check.yml`
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv git
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
 
-Then open:
+Create the Telegram environment file:
 
-**Settings → Secrets and variables → Actions**
+```bash
+sudo nano /etc/stock-check.env
+```
 
-Create these repository secrets:
+Add:
 
-- `TELEGRAM_BOT_TOKEN`
-- `TELEGRAM_CHAT_ID`
+```text
+TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN
+TELEGRAM_CHAT_ID=YOUR_CHAT_ID
+```
 
-Then open:
+Protect it:
 
-**Settings → Actions → General → Workflow permissions**
+```bash
+sudo chmod 600 /etc/stock-check.env
+```
 
-Choose:
+Install the systemd files:
 
-**Read and write permissions**
+```bash
+sudo cp stock-check.service /etc/systemd/system/
+sudo cp stock-check.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now stock-check.timer
+```
 
-The bot needs this so it can save `state.json` and remember the previous stock state.
+Check that the timer is active:
 
-## Test Telegram
+```bash
+systemctl status stock-check.timer
+```
 
-Open:
+Run an immediate test:
 
-**Actions → [REDACTED] Medium Shirt Stock Check → Run workflow**
+```bash
+sudo systemctl start stock-check.service
+```
 
-Turn on:
+View recent logs:
 
-**Send a Telegram test message instead of checking stock**
+```bash
+journalctl -u stock-check.service -n 50 --no-pager
+```
 
-Run the workflow.
+## Updating the bot
 
-You should get:
+From the repo folder:
 
-`✅ [REDACTED] stock bot test: Telegram notifications are working.`
+```bash
+git pull
+.venv/bin/pip install -r requirements.txt
+```
 
-## Test the stock checker
-
-Run the workflow again with the test option turned off.
-
-The logs should show:
-
-- Product name
-- Target size: M
-- Variant ID
-- `Available: True` or `Available: False`
-
-The bot reads the exact Medium variant from Shopify's product data.
-
-## Alert behavior
-
-The first stock run records the current state.
-
-After that, Telegram alerts are sent only when Medium changes from:
-
-`False → True`
-
-So it will not spam you every 15 minutes while the shirt stays in stock.
+The timer will use the updated code on the next run.
 
 ## Security
 
-Never put the Telegram bot token directly in your code or README. Keep it only in GitHub Secrets.
+Do not put the Telegram bot token in GitHub. Keep it only in `/etc/stock-check.env` on the VM.
