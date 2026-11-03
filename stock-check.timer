@@ -1,0 +1,12 @@
+[Unit]
+Description=Run stock availability checker every 5 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+AccuracySec=15s
+Persistent=true
+Unit=stock-check.service
+
+[Install]
+WantedBy=timers.target
